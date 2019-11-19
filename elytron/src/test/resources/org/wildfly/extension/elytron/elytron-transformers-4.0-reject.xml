@@ -86,6 +86,7 @@
             <evidence-decoder name="subjectDecoder"/>
         </aggregate-evidence-decoder>
         <regex-principal-transformer name="RegexOne" pattern="a" replacement="b" />
+        <regex-role-mapper name="RegexRoleMapper" pattern=".*-[a-z]*" replacement="$1"/>
     </mappers>
     <tls>
         <key-stores>

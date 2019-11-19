@@ -116,6 +116,7 @@
             <evidence-decoder name="rfc822Decoder"/>
             <evidence-decoder name="subjectDecoder"/>
         </aggregate-evidence-decoder>
+        <regex-role-mapper name="RegexRoleMapper" pattern=".*-[a-z]*" replacement="$1"/>
     </mappers>
     <permission-sets>
         <permission-set name="my-permissions">
