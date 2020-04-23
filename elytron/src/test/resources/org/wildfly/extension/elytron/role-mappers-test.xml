@@ -28,6 +28,9 @@
         <security-domain name="TestDomain8" default-realm="ClearPropertyRealm" permission-mapper="ConstantPermissionMapper">
             <realm name="ClearPropertyRealm" role-mapper="MyRegexMapper4" role-decoder="GroupsToRoles"/>
         </security-domain>
+        <!--<security-domain name="TestDomain9" default-realm="ClearPropertyRealm" permission-mapper="ConstantPermissionMapper">-->
+            <!--<realm name="ClearPropertyRealm" role-mapper="AggregateRoleMapper1" role-decoder="GroupsToRoles"/>-->
+        <!--</security-domain>-->
     </security-domains>
     <security-realms>
         <properties-realm name="ClearPropertyRealm">
@@ -40,6 +43,10 @@
             <permission-set name="login-permission"/>
         </constant-permission-mapper>
         <simple-role-decoder attribute="groups" name="GroupsToRoles"/>
+        <aggregate-role-mapper name="AggregateRoleMapper1">
+            <role-mapper name="MyRegexMapper2" />
+            <role-mapper name="MappedRoleMapperUserToAdmin" />
+        </aggregate-role-mapper>
         <mapped-role-mapper name="NonKeepingMappedRoleMapper" keep-mapped="false" keep-non-mapped="false">
             <role-mapping from="firstGroup" to="mappedGroup"/>
             <role-mapping from="dontMap" to="notInThisGroup"/>
@@ -56,10 +63,13 @@
             <role-mapping from="firstGroup" to="mappedGroup"/>
             <role-mapping from="dontMap" to="notInThisGroup"/>
         </mapped-role-mapper>
+        <mapped-role-mapper name="MappedRoleMapperUserToAdmin" keep-mapped="false" keep-non-mapped="true">
+            <role-mapping from="user" to="admin"/>
+        </mapped-role-mapper>
         <regex-role-mapper name="MyRegexMapper" pattern=".*-(user)" replacement="application-$1"/>
         <regex-role-mapper name="MyRegexMapper2" pattern=".*-([a-zA-Z]*)-.*" replacement="$1" keep-non-mapped="false"/>
         <regex-role-mapper name="MyRegexMapper3" pattern=".*-([a-zA-Z]*)-.*" replacement="$1" keep-non-mapped="true"/>
-        <regex-role-mapper name="MyRegexMapper4" pattern="guest" replacement="user" keep-non-mapped="false" replace-all="true"/>
+        <regex-role-mapper name="MyRegexMapper4" pattern="user" replacement="admin" keep-non-mapped="false" replace-all="true"/>
     </mappers>
     <permission-sets>
         <permission-set name="login-permission">

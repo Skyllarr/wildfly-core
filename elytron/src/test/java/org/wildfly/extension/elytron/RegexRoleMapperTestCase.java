@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.auth.server.SecurityIdentity;
 import org.wildfly.security.auth.server.ServerAuthenticationContext;
+import org.wildfly.security.authz.RoleMapper;
 import org.wildfly.security.authz.Roles;
 
 import java.io.IOException;
@@ -56,6 +57,7 @@ public class RegexRoleMapperTestCase extends AbstractSubsystemBaseTest {
         TestEnvironment.activateService(services, Capabilities.SECURITY_DOMAIN_RUNTIME_CAPABILITY, "TestDomain6");
         TestEnvironment.activateService(services, Capabilities.SECURITY_DOMAIN_RUNTIME_CAPABILITY, "TestDomain7");
         TestEnvironment.activateService(services, Capabilities.SECURITY_DOMAIN_RUNTIME_CAPABILITY, "TestDomain8");
+//        TestEnvironment.activateService(services, Capabilities.SECURITY_DOMAIN_RUNTIME_CAPABILITY, "TestDomain9");
     }
 
     @Test
@@ -167,15 +169,70 @@ public class RegexRoleMapperTestCase extends AbstractSubsystemBaseTest {
         Assert.assertTrue(context.authorize());
         context.succeed();
         SecurityIdentity identity = context.getAuthorizedIdentity();
+        Assert.assertEquals("user4", identity.getPrincipal().getName());
 
         Roles roles = identity.getRoles();
         Assert.assertTrue(roles.contains("app-user"));
         Assert.assertTrue(roles.contains("app-user-first-time-user"));
-        Assert.assertFalse(roles.contains("app-guest"));
-        Assert.assertFalse(roles.contains("app-guest-first-time-guest"));
-        Assert.assertFalse(roles.contains("app-user-first-time-guest"));
-        Assert.assertFalse(roles.contains("app-guest-first-time-user"));
+        Assert.assertFalse(roles.contains("app-user"));
+        Assert.assertFalse(roles.contains("app-user-first-time-user"));
+        Assert.assertFalse(roles.contains("app-user-first-time-user"));
+        Assert.assertFalse(roles.contains("app-user-first-time-user"));
         Assert.assertFalse(roles.contains("joe"));
-        Assert.assertEquals("user4", identity.getPrincipal().getName());
+
+        context = domain.createNewAuthenticationContext();
+        context.setAuthenticationName("user7");
+        Assert.assertTrue(context.exists());
+        Assert.assertTrue(context.authorize());
+        context.succeed();
+        identity = context.getAuthorizedIdentity();
+        Assert.assertEquals("user7", identity.getPrincipal().getName());
+        roles = identity.getRoles();
+        Assert.assertTrue(roles.contains("admin"));
+        Assert.assertFalse(roles.contains("user"));
+    }
+
+    @Test
+    public void testAddRegexRoleMapperAggregate() throws Exception {
+//        init("TestDomain9");
+//
+//        ServiceName serviceName = Capabilities.SECURITY_DOMAIN_RUNTIME_CAPABILITY.getCapabilityServiceName("TestDomain9");
+//        Assert.assertNotNull(services.getContainer());
+//        Assert.assertNotNull(services.getContainer().getService(serviceName));
+//        SecurityDomain domain = (SecurityDomain) services.getContainer().getService(serviceName).getValue();
+//        Assert.assertNotNull(domain);
+//
+//        serviceName = Capabilities.ROLE_MAPPER_RUNTIME_CAPABILITY.getCapabilityServiceName("MyRegexMapper4");
+//        Assert.assertNotNull(services.getContainer());
+//        Assert.assertNotNull(services.getContainer().getService(serviceName));
+//        RoleMapper roleMapperToUpdate = (RoleMapper) services.getContainer().getService(serviceName).getValue();
+//        Assert.assertNotNull(roleMapperToUpdate);
+//
+//
+//        ServerAuthenticationContext context = domain.createNewAuthenticationContext();
+//        context.setAuthenticationName("user5");
+//        Assert.assertTrue(context.exists());
+//        Assert.assertTrue(context.authorize());
+//        context.succeed();
+//        SecurityIdentity identity = context.getAuthorizedIdentity();
+//        Assert.assertEquals("user5", identity.getPrincipal().getName());
+//
+//        Roles roles = identity.getRoles();
+//        Assert.assertTrue(roles.contains("admin"));
+//        Assert.assertTrue(roles.contains("joe"));
+//        Assert.assertFalse(roles.contains("1-user"));
+//        Assert.assertFalse(roles.contains("user"));
+//
+//        context = domain.createNewAuthenticationContext();
+//        context.setAuthenticationName("user6");
+//        Assert.assertTrue(context.exists());
+//        Assert.assertTrue(context.authorize());
+//        context.succeed();
+//        identity = context.getAuthorizedIdentity();
+//        Assert.assertEquals("user6", identity.getPrincipal().getName());
+//
+//        roles = identity.getRoles();
+//        Assert.assertTrue(roles.contains("admin"));
+//        Assert.assertTrue(roles.contains("random"));
     }
 }

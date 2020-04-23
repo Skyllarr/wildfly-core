@@ -11,7 +11,7 @@ import org.wildfly.core.testrunner.WildflyTestRunner;
 import static org.hamcrest.core.StringContains.containsString;
 
 @RunWith(WildflyTestRunner.class)
-public class RegexRoleMapperTestCase {
+public class RegexRoleMapperTest {
     CLIWrapper cli;
 
     @Before
