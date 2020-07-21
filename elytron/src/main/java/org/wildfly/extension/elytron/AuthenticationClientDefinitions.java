@@ -28,6 +28,7 @@ import static org.wildfly.extension.elytron.Capabilities.AUTHENTICATION_CONTEXT_
 import static org.wildfly.extension.elytron.Capabilities.SECURITY_DOMAIN_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.SECURITY_FACTORY_CREDENTIAL_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.SSL_CONTEXT_CAPABILITY;
+import static org.wildfly.extension.elytron.ElytronDefinition.commonRequirements;
 import static org.wildfly.extension.elytron._private.ElytronSubsystemMessages.ROOT_LOGGER;
 
 import java.util.HashMap;
@@ -55,6 +56,8 @@ import org.jboss.as.controller.security.CredentialReference;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
 import org.jboss.msc.service.ServiceBuilder;
+import org.jboss.msc.service.ServiceController;
+import org.jboss.msc.service.ServiceTarget;
 import org.jboss.msc.value.InjectedValue;
 import org.wildfly.common.function.ExceptionSupplier;
 import org.wildfly.extension.elytron.TrivialService.ValueSupplier;
@@ -414,6 +417,7 @@ class AuthenticationClientDefinitions {
     }
 
     static ResourceDefinition getAuthenticationContextDefinition() {
+
         AttributeDefinition[] attributes = new AttributeDefinition[] { CONTEXT_EXTENDS, MATCH_RULES };
 
         TrivialAddHandler<AuthenticationContext> add = new TrivialAddHandler<AuthenticationContext>(AuthenticationContext.class, attributes, AUTHENTICATION_CONTEXT_RUNTIME_CAPABILITY) {
@@ -503,6 +507,18 @@ class AuthenticationClientDefinitions {
 
                 final Function<AuthenticationContext, AuthenticationContext> finalContext = authContext;
                 return () -> finalContext.apply(parentSupplier.get());
+            }
+
+            @Override
+            protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
+                commonRequirements(installService(context, model)).setInitialMode(ServiceController.Mode.ACTIVE).install();
+            }
+
+            ServiceBuilder<AuthenticationContext> installService(OperationContext context, ModelNode model)  throws OperationFailedException {
+                ServiceTarget serviceTarget = context.getServiceTarget();
+                ServiceBuilder<AuthenticationContext> serviceBuilder = (ServiceBuilder<AuthenticationContext>)context.getCapabilityServiceTarget().addCapability(AUTHENTICATION_CONTEXT_RUNTIME_CAPABILITY);
+                TrivialService<AuthenticationContext> certificateAuthorityTrivialService = new TrivialService<AuthenticationContext>(getValueSupplier(serviceBuilder, context, model));
+                return serviceTarget.addService(AUTHENTICATION_CONTEXT_RUNTIME_CAPABILITY.getCapabilityServiceName(context.getCurrentAddressValue()), certificateAuthorityTrivialService);
             }
 
         };

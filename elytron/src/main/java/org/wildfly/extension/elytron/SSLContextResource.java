@@ -34,6 +34,7 @@ import org.jboss.as.controller.registry.Resource;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
 import org.wildfly.common.iteration.ByteIterator;
+import org.wildfly.security.dynamic.ssl.DynamicSSLContext;
 
 /**
  * A {@link Resource} to represent a server-ssl-context/client-ssl-context, the majority is actually model
@@ -142,6 +143,9 @@ class SSLContextResource extends DelegatingResource {
      */
     private boolean hasActiveSessions() {
         final SSLContext sslContext = getSSLContext(sslContextServiceController);
+        if (sslContext instanceof DynamicSSLContext) {
+            return false;
+        }
         if (sslContext == null) return false;
         SSLSessionContext sslSessionContext = server ? sslContext.getServerSessionContext() : sslContext.getClientSessionContext();
         return sslSessionContext.getIds().hasMoreElements();

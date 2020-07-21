@@ -1816,6 +1816,13 @@
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
+        <xs:attribute name="dynamic-client-ssl-context" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A dynamic client-ssl-context that will be used to connect to the jwks endpoint specified in the jku token claim. This configuration is mandatory if you want to use remote keys with jku.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
         <xs:attribute name="host-name-verification-policy" type="verificationPolicy" use="optional">
             <xs:annotation>
                 <xs:documentation>
@@ -1856,6 +1863,13 @@
             <xs:annotation>
                 <xs:documentation>
                     A predefined client-ssl-context that will be used to connect to the token introspection endpoint when using SSL/TLS. This configuration is mandatory if the given token introspection url is using SSL/TLS.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="dynamic-client-ssl-context" type="xs:string" use="optional">
+            <xs:annotation>
+                <xs:documentation>
+                    A dynamic client-ssl-context that will be used to connect to the token introspection endpoint when using SSL/TLS. This configuration is mandatory if the given token introspection url is using SSL/TLS.
                 </xs:documentation>
             </xs:annotation>
         </xs:attribute>
@@ -4538,6 +4552,7 @@
             <xs:element name="client-ssl-contexts" type="clientSSLContextsType" minOccurs="0" />
             <xs:element name="certificate-authorities" type="certificateAuthoritiesType" minOccurs="0" />
             <xs:element name="certificate-authority-accounts" type="certificateAuthorityAccountsType" minOccurs="0" />
+            <xs:element name="dynamic-client-ssl-contexts" type="dynamicClientSSLContextsType" minOccurs="0" />
             <xs:element name="server-ssl-sni-contexts" type="serverSSLSNIContextsType" minOccurs="0" />
         </xs:all>
     </xs:complexType>
@@ -5086,6 +5101,38 @@
         </xs:attribute>
     </xs:complexType>
 
+    <xs:complexType name="dynamicClientSSLContextsType">
+        <xs:annotation>
+            <xs:documentation>
+                Container for client SSLContext definitions.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="dynamic-client-ssl-context" type="dynamicClientSSLContextType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="dynamicClientSSLContextType">
+        <xs:annotation>
+            <xs:documentation>
+                Definitions of a single client side SSLContext.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The unique name of this client side SSLContext.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="authentication-context" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The filter to be applied to the cipher suites made available by this SSLContext.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
     <xs:complexType name="keyStoresType">
         <xs:annotation>
             <xs:documentation>
