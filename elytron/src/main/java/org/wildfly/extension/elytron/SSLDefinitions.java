@@ -21,6 +21,8 @@ package org.wildfly.extension.elytron;
 import static org.jboss.as.controller.capability.RuntimeCapability.buildDynamicCapabilityName;
 import static org.jboss.as.controller.security.CredentialReference.handleCredentialReferenceUpdate;
 import static org.jboss.as.controller.security.CredentialReference.rollbackCredentialStoreUpdate;
+import static org.wildfly.extension.elytron.Capabilities.AUTHENTICATION_CONTEXT_CAPABILITY;
+import static org.wildfly.extension.elytron.Capabilities.AUTHENTICATION_CONTEXT_RUNTIME_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.KEY_MANAGER_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.KEY_MANAGER_RUNTIME_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.KEY_STORE_CAPABILITY;
@@ -32,6 +34,7 @@ import static org.wildfly.extension.elytron.Capabilities.SSL_CONTEXT_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.SSL_CONTEXT_RUNTIME_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.TRUST_MANAGER_CAPABILITY;
 import static org.wildfly.extension.elytron.Capabilities.TRUST_MANAGER_RUNTIME_CAPABILITY;
+import static org.wildfly.extension.elytron.ElytronDefinition.commonRequirements;
 import static org.wildfly.extension.elytron.ElytronExtension.getRequiredService;
 import static org.wildfly.extension.elytron.FileAttributeDefinitions.PATH;
 import static org.wildfly.extension.elytron.FileAttributeDefinitions.RELATIVE_TO;
@@ -93,6 +96,7 @@ import org.jboss.as.controller.SimpleAttributeDefinitionBuilder;
 import org.jboss.as.controller.SimpleMapAttributeDefinition;
 import org.jboss.as.controller.SimpleOperationDefinitionBuilder;
 import org.jboss.as.controller.StringListAttributeDefinition;
+import org.jboss.as.controller.capability.RuntimeCapability;
 import org.jboss.as.controller.descriptions.ResourceDescriptionResolver;
 import org.jboss.as.controller.descriptions.StandardResourceDescriptionResolver;
 import org.jboss.as.controller.logging.ControllerLogger;
@@ -107,10 +111,12 @@ import org.jboss.as.controller.services.path.PathManager;
 import org.jboss.as.controller.services.path.PathManagerService;
 import org.jboss.dmr.ModelNode;
 import org.jboss.dmr.ModelType;
+import org.jboss.msc.service.Service;
 import org.jboss.msc.service.ServiceBuilder;
 import org.jboss.msc.service.ServiceController;
 import org.jboss.msc.service.ServiceController.State;
 import org.jboss.msc.service.ServiceName;
+import org.jboss.msc.service.ServiceRegistry;
 import org.jboss.msc.service.StartException;
 import org.jboss.msc.value.InjectedValue;
 import org.wildfly.common.function.ExceptionSupplier;
@@ -118,12 +124,16 @@ import org.wildfly.extension.elytron.TrivialResourceDefinition.Builder;
 import org.wildfly.extension.elytron.TrivialService.ValueSupplier;
 import org.wildfly.extension.elytron._private.ElytronSubsystemMessages;
 import org.wildfly.extension.elytron.capabilities.PrincipalTransformer;
+import org.wildfly.security.auth.client.AuthenticationContext;
+import org.wildfly.security.auth.client.DynamicSSLContextImpl;
 import org.wildfly.security.auth.server.MechanismConfiguration;
 import org.wildfly.security.auth.server.MechanismConfigurationSelector;
 import org.wildfly.security.auth.server.RealmMapper;
 import org.wildfly.security.auth.server.SecurityDomain;
 import org.wildfly.security.credential.PasswordCredential;
 import org.wildfly.security.credential.source.CredentialSource;
+import org.wildfly.security.dynamic.ssl.DynamicSSLContext;
+import org.wildfly.security.dynamic.ssl.DynamicSSLContextException;
 import org.wildfly.security.keystore.AliasFilter;
 import org.wildfly.security.keystore.FilteringKeyStore;
 import org.wildfly.security.password.interfaces.ClearPassword;
@@ -150,6 +160,12 @@ class SSLDefinitions {
     static final SimpleAttributeDefinition ALGORITHM = new SimpleAttributeDefinitionBuilder(ElytronDescriptionConstants.ALGORITHM, ModelType.STRING, true)
             .setAllowExpression(true)
             .setMinSize(1)
+            .setRestartAllServices()
+            .build();
+
+    static final SimpleAttributeDefinition AUTHENTICATION_CONTEXT_ATTRIBUTE = new SimpleAttributeDefinitionBuilder(ElytronDescriptionConstants.AUTHENTICATION_CONTEXT, ModelType.STRING, true)
+            .setMinSize(1)
+            .setCapabilityReference(AUTHENTICATION_CONTEXT_CAPABILITY, SSL_CONTEXT_CAPABILITY)
             .setRestartAllServices()
             .build();
 
@@ -1363,6 +1379,56 @@ class SSLDefinitions {
         };
 
         return createSSLContextDefinition(ElytronDescriptionConstants.CLIENT_SSL_CONTEXT, false, add, attributes, serverOrHostController);
+    }
+
+    private static final AttributeDefinition[] DYNAMIC_SSL_CONTEXT_ATTRIBUTES = new AttributeDefinition[]{AUTHENTICATION_CONTEXT_ATTRIBUTE};
+
+    static ResourceDefinition getDynamicClientSSLContextDefinition(boolean serverOrHostController) {
+        return createSSLContextDefinition(ElytronDescriptionConstants.DYNAMIC_CLIENT_SSL_CONTEXT, false, new DynamicSSLContextAddHandler(), DYNAMIC_SSL_CONTEXT_ATTRIBUTES, serverOrHostController);
+    }
+
+    private static class DynamicSSLContextAddHandler extends BaseAddHandler {
+        private DynamicSSLContextAddHandler() {
+            super(SSL_CONTEXT_RUNTIME_CAPABILITY, DYNAMIC_SSL_CONTEXT_ATTRIBUTES);
+        }
+
+        @Override
+        protected void performRuntime(OperationContext context, ModelNode operation, ModelNode model) throws OperationFailedException {
+            ServiceBuilder<SSLContext> serviceBuilder = installService(context, model);
+            ServiceName authenticationContextServiceName =
+                    AUTHENTICATION_CONTEXT_RUNTIME_CAPABILITY.getCapabilityServiceName(AUTHENTICATION_CONTEXT_ATTRIBUTE.resolveModelAttribute(context, model).asString());
+            serviceBuilder.requires(authenticationContextServiceName);
+            commonRequirements(serviceBuilder).setInitialMode(ServiceController.Mode.ACTIVE).install();
+        }
+
+        ServiceBuilder<SSLContext> installService(OperationContext context, ModelNode model) throws OperationFailedException {
+            ServiceName dynamicSslContextServiceName = SSL_CONTEXT_RUNTIME_CAPABILITY.getCapabilityServiceName(context.getCurrentAddressValue());
+            return context.getServiceTarget().addService(dynamicSslContextServiceName, new TrivialService<>(getValueSupplier(dynamicSslContextServiceName, context, model)));
+        }
+
+        protected ValueSupplier<SSLContext> getValueSupplier(ServiceName dynamicSSLContextName, OperationContext context, ModelNode model) throws OperationFailedException {
+            String authenticationContextName = AUTHENTICATION_CONTEXT_ATTRIBUTE.resolveModelAttribute(context, model).asString();
+            ServiceRegistry serviceRegistry = context.getServiceRegistry(true);
+            return () -> {
+                ServiceController<?> dynamicSSLContextService = serviceRegistry.getRequiredService(dynamicSSLContextName);
+                State dynamicSSLContextServiceState = dynamicSSLContextService.getState();
+                if (!dynamicSSLContextServiceState.equals(State.UP)) {
+                    dynamicSSLContextService.setMode(ServiceController.Mode.ACTIVE);
+                }
+                try {
+                    return new DynamicSSLContext(new DynamicSSLContextImpl(getAuthenticationContextService(serviceRegistry, authenticationContextName).getValue()));
+                } catch (GeneralSecurityException | DynamicSSLContextException e) {
+                    throw new StartException(e);
+                }
+            };
+        }
+
+        static Service<AuthenticationContext> getAuthenticationContextService(ServiceRegistry serviceRegistry, String authenticationContextName) {
+            RuntimeCapability<Void> authenticationContextRuntimeCapability = AUTHENTICATION_CONTEXT_RUNTIME_CAPABILITY.fromBaseCapability(authenticationContextName);
+            ServiceName serviceName = authenticationContextRuntimeCapability.getCapabilityServiceName();
+            ServiceController<AuthenticationContext> serviceContainer = getRequiredService(serviceRegistry, serviceName, AuthenticationContext.class);
+            return serviceContainer.getService();
+        }
     }
 
     private static Provider[] filterProviders(Provider[] all, String provider) {

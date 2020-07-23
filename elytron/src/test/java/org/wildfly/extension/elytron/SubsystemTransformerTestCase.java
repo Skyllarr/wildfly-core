@@ -23,6 +23,8 @@ import static org.junit.Assert.assertTrue;
 
 import static org.wildfly.extension.elytron.ElytronDescriptionConstants.DISTRIBUTED_REALM;
 import static org.wildfly.extension.elytron.ElytronDescriptionConstants.FAILOVER_REALM;
+import static org.wildfly.extension.elytron.ElytronDescriptionConstants.DYNAMIC_CLIENT_SSL_CONTEXT;
+import static org.wildfly.extension.elytron.ElytronDescriptionConstants.DYNAMIC_CLIENT_SSL_CONTEXTS;
 import static org.wildfly.extension.elytron.ElytronDescriptionConstants.JDBC_REALM;
 import static org.wildfly.extension.elytron.ElytronDescriptionConstants.AGGREGATE_REALM;
 
@@ -184,7 +186,11 @@ public class SubsystemTransformerTestCase extends AbstractSubsystemBaseTest {
                         FailedOperationTransformationConfig.REJECTED_RESOURCE)
                 .addFailedAttribute(SUBSYSTEM_ADDRESS.append(PathElement.pathElement(DISTRIBUTED_REALM, "DistributedRealm")), REJECTED_RESOURCE)
                 .addFailedAttribute(SUBSYSTEM_ADDRESS.append(PathElement.pathElement(FAILOVER_REALM, "FailoverRealm")), REJECTED_RESOURCE)
-                );
+                .addFailedAttribute(SUBSYSTEM_ADDRESS.append(PathElement.pathElement(DYNAMIC_CLIENT_SSL_CONTEXT, "TestDynamicClientSSLContext")),
+                        FailedOperationTransformationConfig.REJECTED_RESOURCE)
+                .addFailedAttribute(SUBSYSTEM_ADDRESS.append(PathElement.pathElement(DYNAMIC_CLIENT_SSL_CONTEXTS)),
+                        FailedOperationTransformationConfig.REJECTED_RESOURCE)
+        );
     }
 
     @Test
