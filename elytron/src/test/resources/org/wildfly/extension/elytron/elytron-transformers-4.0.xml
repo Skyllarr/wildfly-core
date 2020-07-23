@@ -36,5 +36,8 @@
                 <certificate-revocation-list/>
             </trust-manager>
         </trust-managers>
+        <dynamic-client-ssl-contexts>
+            <dynamic-client-ssl-context name="TestDynamicClientSSLContext" authentication-context="testAC"/>
+        </dynamic-client-ssl-contexts>
     </tls>
 </subsystem>

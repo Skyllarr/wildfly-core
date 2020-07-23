@@ -11,6 +11,7 @@
                                       forwarding-mode="authorization">
             <credential-reference store="store1" clear-text="supersecret!"/>
         </authentication-configuration>
+        <authentication-context name="testAC"/>
     </authentication-client>
     <credential-stores>
         <credential-store name="store1" location="path/to/store_file" >
@@ -184,6 +185,9 @@
                 <ocsp/>
             </trust-manager>
         </trust-managers>
+        <dynamic-client-ssl-contexts>
+            <dynamic-client-ssl-context name="TestDynamicClientSSLContext" authentication-context="testAC"/>
+        </dynamic-client-ssl-contexts>
     </tls>
     <dir-contexts>
         <dir-context name="dirContext" url="ldap://localhost:11390" principal="uid=server,dc=elytron,dc=wildfly,dc=org" enable-connection-pooling="true">

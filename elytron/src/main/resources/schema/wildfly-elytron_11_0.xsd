@@ -4559,6 +4559,7 @@
             <xs:element name="client-ssl-contexts" type="clientSSLContextsType" minOccurs="0" />
             <xs:element name="certificate-authorities" type="certificateAuthoritiesType" minOccurs="0" />
             <xs:element name="certificate-authority-accounts" type="certificateAuthorityAccountsType" minOccurs="0" />
+            <xs:element name="dynamic-client-ssl-contexts" type="dynamicClientSSLContextsType" minOccurs="0" />
             <xs:element name="server-ssl-sni-contexts" type="serverSSLSNIContextsType" minOccurs="0" />
         </xs:all>
     </xs:complexType>
@@ -5107,6 +5108,38 @@
         </xs:attribute>
     </xs:complexType>
 
+    <xs:complexType name="dynamicClientSSLContextsType">
+        <xs:annotation>
+            <xs:documentation>
+                Container for client SSLContext definitions.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:sequence>
+            <xs:element name="dynamic-client-ssl-context" type="dynamicClientSSLContextType" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+
+    <xs:complexType name="dynamicClientSSLContextType">
+        <xs:annotation>
+            <xs:documentation>
+                Definitions of a single client side SSLContext. This context is used to connect with ssl context chosen based on peer's host and port information.
+            </xs:documentation>
+        </xs:annotation>
+        <xs:attribute name="name" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The unique name of this client side SSLContext.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+        <xs:attribute name="authentication-context" type="xs:string" use="required">
+            <xs:annotation>
+                <xs:documentation>
+                    The authentication context that will be used to query for specific ssl context to use when connecting to a specific peer.
+                </xs:documentation>
+            </xs:annotation>
+        </xs:attribute>
+    </xs:complexType>
     <xs:complexType name="keyStoresType">
         <xs:annotation>
             <xs:documentation>
